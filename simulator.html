@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title> eFootball Pack New year</title>
+    <style>
+        body { background-color: #121212; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .header { background-color: #1e3a1e; width: 100%; max-width: 1400px; padding: 20px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-size: 24px; font-weight: bold; border: 1px solid #2d5a27; }
+        .settings-bar { background-color: #222; width: 100%; max-width: 1400px; padding: 15px; border-radius: 10px; display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        .settings-bar input { padding: 8px; width: 100px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
+        
+        .btn-green { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-blue { background-color: #17a2b8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .stats { display: flex; gap: 50px; font-size: 24px; font-weight: bold; color: #ffcc00; margin-bottom: 20px; }
+        .controls { display: flex; gap: 15px; margin-bottom: 30px; }
+        .btn-draw-1 { background-color: #f8f9fa; color: black; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 18px; }
+        .btn-draw-10 { background-color: #ffcc00; color: black; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 18px; }
+
+        /* ขยายพื้นที่แสดงผลให้กว้างมากพอสำหรับ 10 การ์ดที่ไม่บีบ */
+        .result-box { border: 2px dashed #444; border-radius: 15px; padding: 25px; width: 95%; max-width: 1600px; display: none; margin-bottom: 30px; background: rgba(0,0,0,0.2); overflow-x: auto; }
+        
+        .card-grid { 
+            display: grid; 
+            grid-template-columns: repeat(10, 1fr); 
+            gap: 15px; 
+            min-width: 1300px; /* บังคับความกว้างขั้นต่ำของแถวเพื่อป้องกันการบีบรูป */
+        }
+        
+        /* ปรับสัดส่วนการ์ดให้กว้างเท่ารูปต้นฉบับ */
+        .card { 
+            background-color: #2a2a2a; 
+            border-radius: 10px; 
+            height: 250px; /* เพิ่มความสูง */
+            width: 100%;  
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            padding: 0; 
+            border: 1px solid #444;
+            overflow: hidden;
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        .card-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; /* ให้รูปแสดงผลเต็มพื้นที่โดยไม่เสียสัดส่วน */
+        }
+
+        .card-name { position: absolute; bottom: 0; background: rgba(0,0,0,0.85); width: 100%; font-size: 12px; text-align: center; padding: 8px 0; color: #fff; font-weight: bold; }
+        .card.epic { border: 3px solid #ffcc00; box-shadow: 0 0 20px rgba(255, 204, 0, 0.5); }
+
+        /* ส่วนประวัติการสุ่ม */
+        #historySection { width: 95%; max-width: 1600px; text-align: left; display: none; margin-top: 20px; }
+        .history-box { border: 1px solid #555; border-radius: 8px; margin-bottom: 15px; padding: 15px; background: #1a1a1a; }
+        .history-title { font-size: 18px; font-weight: bold; color: #ffcc00; margin-bottom: 10px; display: block; }
+        .history-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+        .mini-card { flex: 0 0 110px; height: 160px; } /* ขยายการ์ดในประวัติให้กว้างขึ้นด้วย */
+    </style>
+</head>
+<body>
+
+    <div class="header">⚽ eFootball Pack New year</div>
+
+    <div class="settings-bar">
+        <span>💰 ทอง:</span>
+        <input type="number" id="inputGold" value="15000">
+        <button class="btn-green" onclick="setGold()">ตั้งค่า/รีเซ็ต</button>
+        <button class="btn-blue" onclick="toggleHistory()">📋 เปิด/ปิด ประวัติ</button>
+    </div>
+
+    <div class="stats">
+        <div>🟡 ทองปัจจุบัน: <span id="goldDisplay">15,000</span></div>
+        <div>📦 จำนวนในตู้: <span id="remain">250</span> / 250</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-draw-1" onclick="draw(1)">เปิด 1 ใบ (100)</button>
+        <button class="btn-draw-10" onclick="draw(10)">เปิด 10 ใบ (900)</button>
+    </div>
+
+    <div id="resultArea" class="result-box">
+        <div id="cardGrid" class="card-grid"></div>
+    </div>
+
+    <div id="historySection">
+        <h3 style="color: #ffcc00; border-left: 5px solid #ffcc00; padding-left: 10px;">📜 ประวัติการสุ่มทั้งหมด</h3>
+        <div id="historyContainer"></div>
+    </div>
+
+    <script>
+        let gold = 15000;
+        let box = [];
+        let drawCount = 0;
+
+        const specialPlayersData = [
+            { name: "L. Messi", img: "messi.jpg", type: 'epic' },
+            { name: "J. Cruyff", img: "cruyff.jpg", type: 'epic' },
+            { name: "F. Baresi", img: "baresi.jpg", type: 'epic' },
+            { name: "E. Cantona", img: "cantona.jpg", type: 'epic' },
+            { name: "R. Carlos", img: "carlos.jpg", type: 'epic' },
+            { name: "D. Bergkamp", img: "bergkamp.jpg", type: 'epic' },
+            { name: "J. O'Shea", img: "oshea.jpg", type: 'epic' }
+        ];
+
+        const standardPlayerData = { name: "Salt (เกลือ)", img: "standard.jpg", type: 'standard' };
+
+        function setGold() {
+            gold = parseInt(document.getElementById('inputGold').value) || 0;
+            drawCount = 0;
+            resetBox();
+        }
+
+        function resetBox() {
+            box = specialPlayersData.map(p => ({...p}));
+            while(box.length < 250) { box.push({...standardPlayerData}); }
+            updateUI();
+            document.getElementById('resultArea').style.display = "none";
+            document.getElementById('historyContainer').innerHTML = "";
+        }
+
+        function updateUI() {
+            document.getElementById('goldDisplay').innerText = gold.toLocaleString();
+            document.getElementById('remain').innerText = box.length;
+        }
+
+        function toggleHistory() {
+            const h = document.getElementById('historySection');
+            h.style.display = h.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function createCardHTML(p, isMini = false) {
+            const div = document.createElement('div');
+            div.className = 'card' + (p.type === 'epic' ? ' epic' : '') + (isMini ? ' mini-card' : '');
+            div.innerHTML = `<img src="${p.img}" class="card-img" onerror="this.src='https://placehold.co/180x250?text=No+Img'"><div class="card-name">${p.name}</div>`;
+            return div;
+        }
+
+        function draw(count) {
+            let cost = (count === 1) ? 100 : 900;
+            if (gold < cost || box.length < count) return alert("ทองไม่พอ!");
+
+            gold -= cost;
+            drawCount++;
+            let results = [];
+            for (let i = 0; i < count; i++) {
+                let idx = Math.floor(Math.random() * box.length);
+                results.push(box.splice(idx, 1)[0]);
+            }
+
+            const area = document.getElementById('resultArea');
+            const grid = document.getElementById('cardGrid');
+            area.style.display = "block";
+            grid.innerHTML = "";
+            
+            // ปรับแต่ง Grid สำหรับการเปิด 1 ใบให้ขนาดไม่กว้างเกินไป
+            if(count === 1) {
+                grid.style.gridTemplateColumns = "180px";
+                grid.style.minWidth = "auto";
+                grid.style.justifyContent = "center";
+            } else {
+                grid.style.gridTemplateColumns = "repeat(10, 1fr)";
+                grid.style.minWidth = "1350px";
+                grid.style.justifyContent = "start";
+            }
+
+            results.forEach(p => { grid.appendChild(createCardHTML(p)); });
+            addHistory(drawCount, cost, results);
+            updateUI();
+        }
+
+        function addHistory(num, cost, players) {
+            const container = document.getElementById('historyContainer');
+            const boxDiv = document.createElement('div');
+            boxDiv.className = 'history-box';
+            boxDiv.innerHTML = `<span class="history-title">ครั้งที่ ${num}. ใช้ไป ${cost.toLocaleString()} ทอง</span>`;
+            const row = document.createElement('div');
+            row.className = 'history-row';
+            players.forEach(p => { row.appendChild(createCardHTML(p, true)); });
+            boxDiv.appendChild(row);
+            container.insertBefore(boxDiv, container.firstChild);
+        }
+
+        resetBox();
+    </script>
+</body>
+</html>
